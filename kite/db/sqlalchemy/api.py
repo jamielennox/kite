@@ -10,6 +10,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import logging
+
 from oslo.config import cfg
 from sqlalchemy.orm import exc
 
@@ -77,7 +79,30 @@ class SqlalchemyDbImpl(connection.Connection):
 
         return host.latest_generation
 
+    def _get_group_data(self, session, name):
+        """Return data about a group.
+
+        In the case of getting a key where there is a Group defined but no key
+        has yet been defined we are supposed to return the group data without
+        a key. This is a difficult query to write as an all in one. This
+        function is called when we fail to find a key, to return group data
+        if the request host is a group.
+        """
+        query = session.query(models.Host.name)
+        query = query.filter(models.Host.group == True)
+        query = query.filter(models.Host.name == name)
+
+        try:
+            result = query.one()
+        except exc.NoResultFound:
+            return None
+        else:
+            import ipdb; ipdb.set_trace()
+            return {'name': result.name,
+                    'group': True}
+
     def get_key(self, name, generation=None, group=None):
+        logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
         session = get_session()
 
         query = session.query(models.Host, models.Key)
@@ -96,7 +121,12 @@ class SqlalchemyDbImpl(connection.Connection):
         try:
             result = query.one()
         except exc.NoResultFound:
-            return None
+            if group is not False and generation is None:
+                return self._get_group_data(session, name)
+            else:
+                return None
+        finally:
+            logging.getLogger('sqlalchemy.engine').setLevel(logging.WARN)
 
         return {'name': result.Host.name,
                 'group': result.Host.group,

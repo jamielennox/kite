@@ -12,6 +12,7 @@
 
 import base64
 import functools
+import logging
 
 import pecan
 import wsme
@@ -20,6 +21,9 @@ from kite.common import exception
 from kite.common import utils
 from kite.openstack.common import jsonutils
 from kite.openstack.common import timeutils
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def memoize(f):
@@ -74,6 +78,9 @@ class Endpoint(object):
             pecan.abort(500, "Failed to decrypt key for '%s:%s'. " %
                         (self.host, self.generation))
         except exception.KeyNotFound:
+            group = "group " if self._group else ""
+            gen = ":%s" % self.generation if self.generation else ""
+            LOGGER.info("Couldn't find %skey %s%s", group, self.host, gen)
             pecan.abort(404, "Could not find key")
 
     @property
@@ -142,6 +149,9 @@ class BaseRequest(wsme.types.Base):
         if not self.nonce:
             # just check this until we actually use it
             pecan.abort(400, 'Invalid nonce')
+
+        LOGGER.debug("Signing with key %s => %s",
+                     self.source.key_str, base64.b64encode(self.source.key))
 
         try:
             sigc = pecan.request.crypto.sign(self.source.key, self.metadata)

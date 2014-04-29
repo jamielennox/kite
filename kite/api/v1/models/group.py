@@ -39,7 +39,7 @@ class GroupKeyRequest(base.BaseRequest):
     def __init__(self, **kwargs):
         super(GroupKeyRequest, self).__init__(**kwargs)
 
-        seconds = int(pecan.request.conf.kds.ticket_lifetime)
+        seconds = int(pecan.request.conf.ticket_lifetime)
         self.ttl = datetime.timedelta(seconds=seconds)
 
     def new_response(self):
@@ -58,7 +58,7 @@ class GroupKeyRequest(base.BaseRequest):
         super(GroupKeyRequest, self).verify()
 
         # check that we are a group member
-        if self.source.host.split('.')[0] != self.dest.host:
+        if self.source.host.split('.')[0] != self.destination.host:
             raise exception.Unauthorized("Not a group member")
 
         # we can only request a group key for a group

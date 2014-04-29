@@ -6,7 +6,7 @@ lockfile>=0.8
 posix_ipc
 python-subunit>=0.0.18
 sphinx>=1.1.2,<1.2
-oslo.sphinx
+oslosphinx
 oslotest
 testrepository>=0.0.18
 testscenarios>=0.4

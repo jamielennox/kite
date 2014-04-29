@@ -30,8 +30,8 @@ class GroupController(rest.RestController):
     def delete(self, name):
         pecan.request.storage.delete_group(name)
 
-    @wsme.validate(models.Ticket)
-    @wsme_pecan.wsexpose(models.Ticket, body=models.TicketRequest)
+    @wsme.validate(models.GroupKey)
+    @wsme_pecan.wsexpose(models.GroupKey, body=models.GroupKeyRequest)
     def post(self, group_request):
         group_request.verify()
         return group_request.new_response()

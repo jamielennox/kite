@@ -11,6 +11,7 @@
 # under the License.
 
 import base64
+import logging
 
 import pecan
 from pecan import rest
@@ -19,6 +20,8 @@ import wsmeext.pecan as wsme_pecan
 
 from kite.api.v1 import models
 from kite.openstack.common import jsonutils
+
+LOGGER = logging.getLogger(__name__)
 
 
 class TicketController(rest.RestController):
@@ -35,9 +38,15 @@ class TicketController(rest.RestController):
         rndkey = pecan.request.crypto.extract(ticket_request.source.key,
                                               pecan.request.crypto.new_key())
 
+        LOGGER.debug("Generated rndkey: %s", base64.b64encode(rndkey))
+
         # generate the keys to communicate between these two endpoints.
-        e_key, s_key = pecan.request.crypto.generate_keys(rndkey,
+        s_key, e_key = pecan.request.crypto.generate_keys(rndkey,
                                                           ticket_request.info)
+
+        LOGGER.debug('info: %s', ticket_request.info)
+        LOGGER.debug("Expands to enc: %s, sig: %s", base64.b64encode(e_key),
+                                                    base64.b64encode(s_key))
 
         # encrypt the base key for the target, this can be used to generate
         # the sek on the target

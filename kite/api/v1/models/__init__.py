@@ -10,14 +10,20 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from kite.api.v1.models import group
+from kite.api.v1.models.group import Group, GroupKey, GroupKeyRequest
 from kite.api.v1.models import key
 from kite.api.v1.models import ticket
 
-Group = group.Group
 KeyInput = key.KeyInput
 KeyData = key.KeyData
 Ticket = ticket.Ticket
 TicketRequest = ticket.TicketRequest
 
-__all__ = [KeyInput, KeyData, Ticket, TicketRequest]
+__all__ = ['Group',
+           'GroupKey',
+           'GroupKeyRequest',
+           'KeyInput',
+           'KeyData',
+           'Ticket',
+           'TicketRequest'
+           ]

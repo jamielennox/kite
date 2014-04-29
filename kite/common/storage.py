@@ -11,12 +11,15 @@
 # under the License.
 
 import datetime
+import logging
 
 from kite.common import crypto
 from kite.common import exception
 from kite.common import utils
 from kite.db import api as dbapi
 from kite.openstack.common import timeutils
+
+LOGGER = logging.getLogger(__name__)
 
 
 class StorageManager(utils.SingletonManager):
@@ -30,7 +33,8 @@ class StorageManager(utils.SingletonManager):
         :param string name: Key Identifier
         :param int generation: Key generation to retrieve. Default latest
         """
-        key = dbapi.get_instance().get_key(name, generation=generation,
+        key = dbapi.get_instance().get_key(name,
+                                           generation=generation,
                                            group=group)
         crypto_manager = crypto.CryptoManager.get_instance()
 
@@ -39,6 +43,7 @@ class StorageManager(utils.SingletonManager):
             raise exception.KeyNotFound(name=name, generation=generation)
 
         if group is not None and group != key['group']:
+            # you specifically asked for a host or group and the key isn't one
             raise exception.KeyNotFound(name=name, generation=generation)
 
         now = timeutils.utcnow()
@@ -55,9 +60,9 @@ class StorageManager(utils.SingletonManager):
         else:
             # otherwise we either have an un-expiring group or host key which
             # we just check against now
-            timeout = now
+            timeout = expiration
 
-        if expiration and expiration <= timeout:
+        if timeout and now >= timeout:
             if key['group']:
                 # clear the key so it will generate a new group key
                 key = {'group': True}
@@ -68,10 +73,17 @@ class StorageManager(utils.SingletonManager):
             dec_key = crypto_manager.decrypt_key(name,
                                                  enc_key=key['key'],
                                                  signature=key['signature'])
-            return {'key': dec_key,
+
+            data = {'key': dec_key,
                     'generation': key['generation'],
                     'name': key['name'],
                     'group': key['group']}
+
+            if expiration:
+                data['expiration'] = expiration
+
+            LOGGER.info("Returning Key %s:%s", key['name'], key['generation'])
+            return data
 
         if generation is not None or not key['group']:
             # A specific generation was asked for or it's not a group key
@@ -84,11 +96,12 @@ class StorageManager(utils.SingletonManager):
         expiration = now + datetime.timedelta(minutes=15)
 
         new_gen = dbapi.get_instance().set_key(name,
-                                               enc_key=enc_key,
+                                               key=enc_key,
                                                signature=signature,
                                                group=True,
                                                expiration=expiration)
 
+        LOGGER.info("Returning Key %s:%s", name, new_gen)
         return {'key': new_key,
                 'generation': new_gen,
                 'name': name,

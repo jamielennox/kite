@@ -28,7 +28,7 @@ class Controller(object):
                     'href': '%s/v1/' % pecan.request.host_url,
                     'rel': 'self'}]}
 
-    group = group_controller.GroupController()
+    groups = group_controller.GroupController()
     keys = key_controller.KeyController()
     tickets = ticket_controller.TicketController()
 
